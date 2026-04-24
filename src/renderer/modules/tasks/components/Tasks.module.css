@@ -1,0 +1,20 @@
+.layout {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  height: 100%;
+  overflow: hidden;
+}
+
+.list {
+  border-right: 1px solid var(--border-subtle);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.detail {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: var(--layer-2);
+}

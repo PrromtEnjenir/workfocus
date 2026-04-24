@@ -1,0 +1,45 @@
+{
+  "app": {
+    "name": "WorkFocus"
+  },
+  "areas": {
+    "work": "Praca",
+    "personal": "Osobiste"
+  },
+  "nav": {
+    "tasks": "Zadania",
+    "reminders": "Przypomnienia",
+    "pomodoro": "Pomodoro",
+    "history": "Historia",
+    "stats": "Statystyki",
+    "rituals": "Rytuały",
+    "triage": "Triage",
+    "timeblocking": "Plan dnia",
+    "decisions": "Decyzje",
+    "settings": "Ustawienia"
+  },
+  "actions": {
+    "save": "Zapisz",
+    "cancel": "Anuluj",
+    "delete": "Usuń",
+    "edit": "Edytuj",
+    "close": "Zamknij",
+    "add": "Dodaj",
+    "confirm": "Potwierdź"
+  },
+  "status": {
+    "active": "Aktywne",
+    "completed": "Zakończone",
+    "someday": "Kiedyś/Może",
+    "cancelled": "Anulowane"
+  },
+  "energy": {
+    "high": "Wysoka",
+    "medium": "Średnia",
+    "low": "Niska"
+  },
+  "errors": {
+    "generic": "Coś poszło nie tak",
+    "loading": "Błąd ładowania danych"
+  }
+}

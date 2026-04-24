@@ -1,0 +1,45 @@
+{
+  "app": {
+    "name": "WorkFocus"
+  },
+  "areas": {
+    "work": "Work",
+    "personal": "Personal"
+  },
+  "nav": {
+    "tasks": "Tasks",
+    "reminders": "Reminders",
+    "pomodoro": "Pomodoro",
+    "history": "History",
+    "stats": "Statistics",
+    "rituals": "Rituals",
+    "triage": "Triage",
+    "timeblocking": "Day Plan",
+    "decisions": "Decisions",
+    "settings": "Settings"
+  },
+  "actions": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "close": "Close",
+    "add": "Add",
+    "confirm": "Confirm"
+  },
+  "status": {
+    "active": "Active",
+    "completed": "Completed",
+    "someday": "Someday/Maybe",
+    "cancelled": "Cancelled"
+  },
+  "energy": {
+    "high": "High",
+    "medium": "Medium",
+    "low": "Low"
+  },
+  "errors": {
+    "generic": "Something went wrong",
+    "loading": "Error loading data"
+  }
+}

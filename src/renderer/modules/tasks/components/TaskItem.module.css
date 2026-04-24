@@ -1,0 +1,236 @@
+.item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 13px 24px;
+  border-bottom: 1px solid var(--border-subtle);
+  cursor: pointer;
+  transition: background 0.1s;
+  position: relative;
+  min-height: 56px;
+}
+
+.item:hover {
+  background: var(--layer-3);
+}
+
+.item:hover .deleteBtn {
+  opacity: 1;
+}
+
+.selected {
+  background: var(--accent-dim) !important;
+}
+
+.selected::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent);
+}
+
+/* Checkbox */
+.completeBtn {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  border: 1.5px solid var(--border-strong);
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+  padding: 0;
+}
+
+.completeBtn:hover {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+  box-shadow: 0 0 6px var(--accent-dim);
+}
+
+/* Ikony priorytetu */
+.priorityIcons {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.iconImportant {
+  width: 9px;
+  height: 9px;
+  color: var(--priority-high);
+  flex-shrink: 0;
+}
+
+.iconUrgent {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--priority-critical);
+  flex-shrink: 0;
+  box-shadow: 0 0 4px var(--priority-critical);
+}
+
+/* Treść */
+.content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.typeIcon {
+  font-size: 12px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.title {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Badge priorytetu */
+.priorityBadge {
+  flex-shrink: 0;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  padding: 2px 8px;
+  border-radius: 3px;
+}
+
+.badgeCritical {
+  background: var(--priority-critical-dim);
+  color: var(--priority-critical);
+  border: 1px solid rgba(248, 113, 113, 0.25);
+}
+
+.badgeHigh {
+  background: var(--priority-high-dim);
+  color: var(--priority-high);
+  border: 1px solid rgba(251, 146, 60, 0.25);
+}
+
+.badgeMed {
+  background: var(--priority-med-dim);
+  color: var(--priority-med);
+  border: 1px solid rgba(167, 139, 250, 0.25);
+}
+
+.badgeLow {
+  background: var(--priority-low-dim);
+  color: var(--text-muted);
+  border: 1px solid rgba(75, 85, 99, 0.25);
+}
+
+/* Meta */
+.meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  overflow: hidden;
+}
+
+.tag {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--tag-color, var(--accent)) 12%, transparent);
+  color: color-mix(in srgb, var(--tag-color, var(--accent)) 80%, var(--text-primary));
+  border: 1px solid color-mix(in srgb, var(--tag-color, var(--accent)) 25%, transparent);
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+  letter-spacing: 0.04em;
+}
+
+.deadline {
+  font-size: 11px;
+  color: var(--priority-critical);
+  font-weight: 500;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.deadlineOk {
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.estimate {
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+}
+
+/* Pain dots */
+.painScore {
+  flex-shrink: 0;
+  padding-left: 8px;
+}
+
+.painDots {
+  display: flex;
+  gap: 3px;
+}
+
+.painDot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--border-strong);
+}
+
+.painDotFilled {
+  background: var(--accent-2);
+  opacity: 0.65;
+}
+
+.painDotHigh {
+  background: var(--priority-critical);
+  opacity: 0.9;
+  box-shadow: 0 0 3px var(--priority-critical);
+}
+
+/* Delete */
+.deleteBtn {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 4px 6px;
+  opacity: 0;
+  transition: opacity 0.1s, color 0.1s;
+  line-height: 1;
+  border-radius: var(--radius-sm);
+}
+
+.deleteBtn:hover {
+  color: var(--priority-critical);
+}

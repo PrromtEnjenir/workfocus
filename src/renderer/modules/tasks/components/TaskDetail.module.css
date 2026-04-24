@@ -1,0 +1,334 @@
+.panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  background: var(--layer-2);
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  gap: 8px;
+  opacity: 0.4;
+}
+
+.emptyHint {
+  font-size: 10px;
+  color: var(--text-muted);
+  opacity: 0.5;
+  letter-spacing: 0.1em;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+  min-height: 44px;
+  gap: 8px;
+}
+
+.badges {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+  flex: 1;
+  min-width: 0;
+}
+
+.badgeImp {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  padding: 2px 8px;
+  border-radius: 3px;
+  background: var(--priority-high-dim);
+  color: var(--priority-high);
+  border: 1px solid rgba(251, 146, 60, 0.25);
+}
+
+.badgeUrg {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  padding: 2px 8px;
+  border-radius: 3px;
+  background: var(--priority-critical-dim);
+  color: var(--priority-critical);
+  border: 1px solid rgba(248, 113, 113, 0.25);
+}
+
+.badgeTag {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 2px 8px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--tag-color, var(--accent)) 12%, transparent);
+  color: color-mix(in srgb, var(--tag-color, var(--accent)) 80%, var(--text-primary));
+  border: 1px solid color-mix(in srgb, var(--tag-color, var(--accent)) 25%, transparent);
+}
+
+.backBtn,
+.closeBtn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 13px;
+  font-family: inherit;
+  padding: 3px 6px;
+  border-radius: var(--radius-sm);
+  transition: background 0.1s, color 0.1s;
+  flex-shrink: 0;
+}
+
+.backBtn:hover,
+.closeBtn:hover {
+  background: var(--layer-3);
+  color: var(--text-primary);
+}
+
+.taskTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  padding: 14px 16px 8px;
+  margin: 0;
+  line-height: 1.45;
+  flex-shrink: 0;
+}
+
+.title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.fields {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.fieldRow {
+  display: flex;
+  align-items: flex-start;
+  padding: 7px 16px;
+  gap: 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.fieldRow:last-child {
+  border-bottom: none;
+}
+
+.fieldLabel {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  min-width: 100px;
+  flex-shrink: 0;
+  padding-top: 1px;
+  text-transform: uppercase;
+}
+
+.fieldValue {
+  font-size: 12.5px;
+  color: var(--text-primary);
+  line-height: 1.45;
+}
+
+.notes {
+  white-space: pre-wrap;
+  line-height: 1.6;
+  color: var(--text-secondary) !important;
+  font-size: 12px !important;
+}
+
+.actions {
+  display: flex;
+  gap: 6px;
+  padding: 10px 16px;
+  border-top: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+}
+
+.editBtn {
+  background: transparent;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  font-family: inherit;
+  padding: 6px 12px;
+  cursor: pointer;
+  flex: 1;
+  transition: all 0.15s;
+}
+
+.editBtn:hover {
+  background: var(--layer-3);
+  color: var(--text-primary);
+  border-color: var(--border-strong);
+}
+
+.completeBtn {
+  background: var(--accent-dim);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  font-family: inherit;
+  padding: 6px 12px;
+  cursor: pointer;
+  flex: 1;
+  transition: all 0.15s;
+}
+
+.completeBtn:hover {
+  background: var(--accent-dim-hover);
+  box-shadow: 0 0 10px var(--accent-dim);
+}
+
+.deleteBtn {
+  background: transparent;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  font-family: inherit;
+  padding: 6px 10px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.15s;
+}
+
+.deleteBtn:hover {
+  background: var(--priority-critical-dim);
+  border-color: rgba(248, 113, 113, 0.3);
+  color: var(--priority-critical);
+}
+
+/* Post-mortem */
+.postMortem {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 16px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.postMortemTitle {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.field span {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.field input,
+.field select {
+  background: var(--layer-3);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 12.5px;
+  font-family: inherit;
+  padding: 6px 9px;
+  transition: border-color 0.15s;
+}
+
+.field input:focus,
+.field select:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.fieldFull {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.fieldFull span {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.fieldFull textarea {
+  background: var(--layer-3);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 12.5px;
+  font-family: inherit;
+  padding: 6px 9px;
+  resize: vertical;
+  min-height: 70px;
+  transition: border-color 0.15s;
+}
+
+.fieldFull textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.confirmBtn {
+  background: var(--accent-dim);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  font-family: inherit;
+  padding: 9px;
+  cursor: pointer;
+  margin-top: 4px;
+  transition: all 0.15s;
+}
+
+.confirmBtn:hover {
+  background: var(--accent-dim-hover);
+  box-shadow: 0 0 12px var(--accent-dim);
+}

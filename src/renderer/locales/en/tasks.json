@@ -1,0 +1,39 @@
+{
+  "title": "Tasks",
+  "new": "New task",
+  "types": {
+    "task": "Task",
+    "email": "Email",
+    "waiting_for": "Waiting for"
+  },
+  "fields": {
+    "title": "Title",
+    "type": "Type",
+    "area": "Area",
+    "tag": "Tag",
+    "important": "Important",
+    "urgent": "Urgent",
+    "pain": "Pain (1-10)",
+    "energy": "Energy required",
+    "estimated": "Estimated time (min)",
+    "deadline": "Deadline",
+    "waitingFor": "Waiting for (person)",
+    "notes": "Notes"
+  },
+  "friction": {
+    "waiting": "Waiting for someone",
+    "missing_info": "Missing information",
+    "technical": "Technical issue",
+    "reprioritized": "Reprioritized",
+    "none": "None"
+  },
+  "empty": "No tasks. Nice!",
+  "completeModal": {
+    "title": "Complete task",
+    "actualTime": "Actual time (min)",
+    "postMortem": "What went differently than planned?",
+    "friction": "What blocked you?",
+    "priorityAccurate": "Was priority accurate?",
+    "submit": "Complete"
+  }
+}

@@ -1,0 +1,265 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+  font-family: var(--font);
+  background: var(--layer-0);
+  color: var(--text-primary);
+}
+
+.navbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 52px;
+  padding: 0 20px;
+  background: var(--layer-0);
+  border-bottom: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+  position: relative;
+  z-index: 100;
+  -webkit-app-region: drag;
+}
+
+.navbar::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 8%;
+  right: 8%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(192, 132, 252, 0.2), transparent);
+  pointer-events: none;
+}
+
+.navLeft,
+.nav,
+.navRight {
+  -webkit-app-region: no-drag;
+}
+
+.navLeft {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 1;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.logoIcon {
+  font-size: 18px;
+  color: var(--accent);
+  line-height: 1;
+  filter: drop-shadow(0 0 6px var(--accent));
+}
+
+.logoText {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--text-primary);
+}
+
+.logoSub {
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.areaSwitcher {
+  display: flex;
+  gap: 2px;
+  background: var(--layer-2);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  padding: 2px;
+}
+
+.areaBtn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 700;
+  font-family: inherit;
+  letter-spacing: 0.1em;
+  padding: 4px 12px;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.areaBtn:hover { color: var(--text-secondary); }
+
+.areaActive {
+  background: var(--accent-dim);
+  color: var(--accent) !important;
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.navLink {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 52px;
+  padding: 0 22px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.navLink:hover { color: var(--text-secondary); }
+
+.navLinkActive { color: var(--text-primary) !important; }
+
+.navLinkActive::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 14px;
+  right: 14px;
+  height: 2px;
+  background: var(--accent);
+  border-radius: 2px 2px 0 0;
+  box-shadow: 0 0 10px var(--accent), 0 0 20px var(--accent-dim);
+}
+
+.navRight {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex: 1;
+  justify-content: flex-end;
+}
+
+.sector {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+}
+
+.datetime {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.timeValue {
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.operatorDot {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--accent-dim);
+  border: 1px solid var(--border-strong);
+  position: relative;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  flex-shrink: 0;
+}
+
+.operatorDot::after {
+  content: '';
+  position: absolute;
+  bottom: 1px;
+  right: 1px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-success);
+  border: 2px solid var(--layer-0);
+  box-shadow: 0 0 5px var(--color-success);
+}
+
+.operatorDot:hover {
+  border-color: var(--accent);
+  box-shadow: 0 0 10px var(--accent-dim);
+}
+
+.windowControls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 4px;
+}
+
+.winBtn {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  transition: filter 0.15s, transform 0.1s;
+}
+
+.winBtn:hover {
+  filter: brightness(1.3);
+  transform: scale(1.1);
+}
+
+.winMinimize { background: #f5a623; box-shadow: 0 0 4px rgba(245,166,35,0.4); }
+.winMaximize { background: #7ed321; box-shadow: 0 0 4px rgba(126,211,33,0.4); }
+.winClose    { background: #d0021b; box-shadow: 0 0 4px rgba(208,2,27,0.4); }
+
+/* ============================================================
+   CONTENT WRAPPER — margines od krawędzi okna
+   ============================================================ */
+.contentWrapper {
+  flex: 1;
+  overflow: hidden;
+  /* 10px od lewej, prawej i dołu — top nie bo navbar już jest */
+  padding: 10px 10px 10px;
+  background: var(--layer-0);
+  display: flex;
+}
+
+.content {
+  flex: 1;
+  overflow: hidden;
+  background: var(--layer-1);
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-subtle);
+  /* Subtelny glow wokół contentu */
+  box-shadow: 0 0 40px rgba(192, 132, 252, 0.04), inset 0 0 0 1px var(--border-subtle);
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--text-muted);
+  font-size: 12px;
+  letter-spacing: 0.2em;
+}
