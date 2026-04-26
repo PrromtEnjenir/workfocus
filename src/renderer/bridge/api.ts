@@ -1,3 +1,4 @@
+// src/bridge/api.ts
 import type {
   Area,
   AppSettings,
@@ -9,10 +10,12 @@ import type {
   DecisionEntry,
   EstimationAccuracy,
   ExportEntity,
+  FiredReminderPayload,
   HistoryFilters,
   MarkdownExportType,
   PomodoroSession,
   ReminderModel,
+  ReminderWithTask,
   RitualLog,
   RitualLogDTO,
   StreakData,
@@ -45,9 +48,9 @@ export const api = {
       ipc<void>('tasks:delete', { id }),
     snooze: (id: string, until: string) =>
       ipc<void>('tasks:snooze', { id, until }),
-    someday: (id: string) => 
+    someday: (id: string) =>
       ipc<void>('tasks:someday', { id }),
-    cancel: (id: string) => 
+    cancel: (id: string) =>
       ipc<void>('tasks:cancel', { id }),
   },
 
@@ -64,22 +67,32 @@ export const api = {
 
   reminders: {
     getToday: () =>
-      ipc<ReminderModel[]>('reminders:getToday'),
+      ipc<ReminderWithTask[]>('reminders:getToday'),
+    getUpcoming: (days?: number) =>
+      ipc<ReminderWithTask[]>('reminders:getUpcoming', { days }),
+    getByTask: (taskId: string) =>
+      ipc<ReminderModel[]>('reminders:getByTask', { taskId }),
     create: (data: CreateReminderDTO) =>
       ipc<ReminderModel>('reminders:create', data),
     dismiss: (id: string) =>
       ipc<void>('reminders:dismiss', { id }),
+    snooze: (id: string, until: string) =>
+      ipc<void>('reminders:snooze', { id, until }),
+    countFollowups: (area?: Area) =>
+      ipc<number>('reminders:countFollowups', { area }),
   },
 
   pomodoro: {
-    start: (taskId: string, minutes?: number) =>
+    start: (taskId: string | null, minutes?: number) =>
       ipc<PomodoroSession>('pomodoro:start', { taskId, minutes }),
-    stop: (sessionId: string, completed: boolean) =>
-      ipc<void>('pomodoro:stop', { sessionId, completed }),
+    stop: (sessionId: string, completed: boolean, interruptedReason?: string) =>
+      ipc<void>('pomodoro:stop', { sessionId, completed, interruptedReason }),
     addParkingLot: (sessionId: string, note: string) =>
       ipc<void>('pomodoro:parkingLot', { sessionId, note }),
     getHistory: (taskId?: string) =>
       ipc<PomodoroSession[]>('pomodoro:history', { taskId }),
+    statsToday: () =>
+      ipc<{ sessions: { completed: number; total: number }; focusMinutes: number }>('pomodoro:statsToday'),
   },
 
   stats: {
@@ -135,10 +148,12 @@ export const api = {
   },
 }
 
-// Nasłuchiwanie zdarzeń push z main process
+// Push eventy z main process (scheduler → renderer)
 export const listen = {
-  onReminder: (cb: (reminderId: string) => void) =>
-    window.electronAPI.on('reminders:getToday', (id) => cb(id as string)),
-  onQuickCapture: (cb: () => void) =>
+  // Scheduler odpala gdy reminder jest due
+  onReminderFired: (cb: (payload: FiredReminderPayload) => void): (() => void) =>
+    window.electronAPI.on('reminder:fired', (p) => cb(p as FiredReminderPayload)),
+
+  onQuickCapture: (cb: () => void): (() => void) =>
     window.electronAPI.on('shortcut:quickCapture', cb),
 }

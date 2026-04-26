@@ -8,9 +8,13 @@ import type {
   UpdateTaskDTO,
 } from '@/shared/types/global.types'
 import { TasksRepo } from '../db/repositories/tasks.repo'
+import { RemindersRepo } from '../db/repositories/reminders.repo'
+import { SettingsRepo } from '../db/repositories/settings.repo'
 
 export function registerTasksIpc(db: Database.Database): void {
   const repo = new TasksRepo(db)
+  const remindersRepo = new RemindersRepo(db)
+  const settingsRepo = new SettingsRepo(db)
 
   ipcMain.handle(
     'tasks:getAll',
@@ -24,7 +28,30 @@ export function registerTasksIpc(db: Database.Database): void {
   })
 
   ipcMain.handle('tasks:create', (_, data: CreateTaskDTO) => {
-    return repo.create(data)
+    const task = repo.create(data)
+    console.log('[tasks:create] type:', task.type)  // ← dodaj
+
+    // Auto follow-up reminder dla email i waiting_for
+    if (task.type === 'email' || task.type === 'waiting_for') {
+      try {
+        const followupDays = settingsRepo.get('followupDefaultDays') as number ?? 3
+        const remindAt = new Date()
+        remindAt.setDate(remindAt.getDate() + followupDays)
+        remindAt.setHours(9, 0, 0, 0)
+        console.log('[tasks:create] followupDays:', followupDays, 'remindAt:', remindAt.toISOString())
+        const reminder = remindersRepo.create({
+          taskId: task.id,
+          remindAt: remindAt.toISOString(),
+          type: 'followup',
+          followupAfterDays: followupDays,
+        })
+        console.log('[tasks:create] reminder utworzony:', reminder.id)
+      } catch (err) {
+        console.error('[tasks:create] błąd tworzenia remindera:', err)
+      }
+    }
+
+    return task
   })
 
   ipcMain.handle(

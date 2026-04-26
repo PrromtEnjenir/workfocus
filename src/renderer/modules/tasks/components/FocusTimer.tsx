@@ -1,30 +1,47 @@
-import { useEffect, useRef, useState } from 'react'
-import type { TaskModel } from '@/shared/types/global.types'
+// src/renderer/modules/tasks/components/FocusTimer.tsx
+import { useEffect, useRef, useState, useCallback } from 'react'
+import { api } from '@/bridge/api'
+import type { PomodoroSession, TaskModel } from '@/shared/types/global.types'
 import styles from './FocusTimer.module.css'
 
 interface FocusTimerProps {
   activeTask: TaskModel | null
 }
 
-type TimerState = 'idle' | 'running' | 'paused'
+type TimerState = 'idle' | 'running' | 'paused' | 'completing'
 
-const DEFAULT_MINUTES = 25
+const DEFAULT_MINUTES = 0.1
 
 export function FocusTimer({ activeTask }: FocusTimerProps) {
   const [state, setState] = useState<TimerState>('idle')
   const [totalSeconds, setTotalSeconds] = useState(DEFAULT_MINUTES * 60)
   const [remainingSeconds, setRemainingSeconds] = useState(DEFAULT_MINUTES * 60)
-  const [sessions, setSessions] = useState(0)
+  const [sessionsToday, setSessionsToday] = useState(0)
+
+  const currentSessionRef = useRef<PomodoroSession | null>(null)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  const loadStats = useCallback(async () => {
+    try {
+      const stats = await api.pomodoro.statsToday()
+      setSessionsToday(stats.sessions.completed)
+    } catch (err) {
+      console.error('[FocusTimer] Błąd ładowania statystyk:', err)
+    }
+  }, [])
+
+  useEffect(() => {
+    loadStats()
+  }, [loadStats])
 
   useEffect(() => {
     if (state === 'running') {
       intervalRef.current = setInterval(() => {
         setRemainingSeconds((prev) => {
           if (prev <= 1) {
-            setState('idle')
-            setSessions((s) => s + 1)
-            return totalSeconds
+            // Zostań na 0 — stan 'completing' zatrzyma interval i pokaże pełne kółko
+            setState('completing')
+            return 0
           }
           return prev - 1
         })
@@ -32,17 +49,65 @@ export function FocusTimer({ activeTask }: FocusTimerProps) {
     } else {
       if (intervalRef.current) clearInterval(intervalRef.current)
     }
+
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current)
     }
+  }, [state])
+
+  // Obsługa completing — osobny efekt, odpala się gdy stan zmieni się na 'completing'
+  useEffect(() => {
+    if (state !== 'completing') return
+
+    const session = currentSessionRef.current
+
+    const finish = async () => {
+      if (session) {
+        try {
+          await api.pomodoro.stop(session.id, true)
+          currentSessionRef.current = null
+          setSessionsToday((s) => s + 1)
+        } catch (err) {
+          console.error('[FocusTimer] Błąd zapisu sesji:', err)
+        }
+      }
+      // Reset po krótkim delay — użytkownik widzi 00:00 przez chwilę
+      setTimeout(() => {
+        setState('idle')
+        setRemainingSeconds(totalSeconds)
+      }, 800)
+    }
+
+    finish()
   }, [state, totalSeconds])
 
-  const toggle = () => {
-    if (state === 'idle' || state === 'paused') setState('running')
-    else setState('paused')
+  const toggle = async () => {
+    if (state === 'idle') {
+      try {
+        const plannedMinutes = Math.round(totalSeconds / 60)
+        const session = await api.pomodoro.start(activeTask?.id ?? null, plannedMinutes)
+        currentSessionRef.current = session
+        setState('running')
+      } catch (err) {
+        console.error('[FocusTimer] Błąd startu sesji:', err)
+      }
+    } else if (state === 'running') {
+      setState('paused')
+    } else if (state === 'paused') {
+      setState('running')
+    }
   }
 
-  const reset = () => {
+  const reset = async () => {
+    const session = currentSessionRef.current
+    if (session) {
+      try {
+        await api.pomodoro.stop(session.id, false, 'reset')
+        currentSessionRef.current = null
+      } catch (err) {
+        console.error('[FocusTimer] Błąd resetu sesji:', err)
+      }
+    }
     setState('idle')
     setRemainingSeconds(totalSeconds)
   }
@@ -51,29 +116,34 @@ export function FocusTimer({ activeTask }: FocusTimerProps) {
   const seconds = remainingSeconds % 60
   const timeStr = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
 
-  // SVG circle progress
   const radius = 54
   const circumference = 2 * Math.PI * radius
-  const progress = remainingSeconds / totalSeconds
-  const dashOffset = circumference * (1 - progress)
+  // Przy completing: kółko zostaje pełne (progress = 0 → dashOffset = circumference = puste)
+  // Chcemy pełne kółko przy 0s więc progress liczymy od totalSeconds
+  const progress = totalSeconds > 0 ? remainingSeconds / totalSeconds : 0
+  const dashOffset = circumference * progress  // 0 = pełne kółko, circumference = puste
+
+  const isActive = state === 'running' || state === 'completing'
 
   return (
     <div className={styles.container}>
-      {/* Timer SVG */}
-      <div className={styles.timerWrap} onClick={toggle} title={state === 'running' ? 'Pauza' : 'Start'}>
+      <div
+        className={styles.timerWrap}
+        onClick={state === 'completing' ? undefined : toggle}
+        title={state === 'running' ? 'Pauza' : state === 'completing' ? '' : 'Start'}
+        style={state === 'completing' ? { cursor: 'default' } : undefined}
+      >
         <svg className={styles.timerSvg} viewBox="0 0 128 128">
-          {/* Tło okręgu */}
           <circle
             cx="64" cy="64" r={radius}
             fill="none"
             stroke="rgba(192, 132, 252, 0.08)"
             strokeWidth="6"
           />
-          {/* Postęp */}
           <circle
             cx="64" cy="64" r={radius}
             fill="none"
-            stroke={state === 'running' ? 'url(#timerGrad)' : 'rgba(192, 132, 252, 0.3)'}
+            stroke={isActive ? 'url(#timerGrad)' : 'rgba(192, 132, 252, 0.3)'}
             strokeWidth="6"
             strokeLinecap="round"
             strokeDasharray={circumference}
@@ -81,7 +151,6 @@ export function FocusTimer({ activeTask }: FocusTimerProps) {
             transform="rotate(-90 64 64)"
             style={{ transition: 'stroke-dashoffset 1s linear' }}
           />
-          {/* Gradient */}
           <defs>
             <linearGradient id="timerGrad" x1="0%" y1="0%" x2="100%" y2="100%">
               <stop offset="0%" stopColor="#c084fc" />
@@ -90,23 +159,23 @@ export function FocusTimer({ activeTask }: FocusTimerProps) {
           </defs>
         </svg>
 
-        {/* Czas w środku */}
         <div className={styles.timerInner}>
           <span className={styles.timerTime}>{timeStr}</span>
           <span className={styles.timerLabel}>
-            {state === 'running' ? 'FOCUS SESSION' : state === 'paused' ? 'PAUSED' : 'CLICK TO START'}
+            {state === 'running' ? 'FOCUS SESSION'
+              : state === 'paused' ? 'PAUSED'
+              : state === 'completing' ? 'COMPLETE'
+              : 'CLICK TO START'}
           </span>
         </div>
       </div>
 
-      {/* Reset button */}
-      {state !== 'idle' && (
+      {(state === 'running' || state === 'paused') && (
         <button className={styles.resetBtn} onClick={reset}>
           RESET
         </button>
       )}
 
-      {/* Active Mission */}
       {activeTask && (
         <div className={styles.activeMission}>
           <div className={styles.missionHeader}>
@@ -118,14 +187,11 @@ export function FocusTimer({ activeTask }: FocusTimerProps) {
             </span>
           </div>
           <div className={styles.missionTitle}>{activeTask.title}</div>
-          {activeTask.tagId && (
+          {activeTask.estimatedMinutes && (
             <div className={styles.missionMeta}>
-              {activeTask.estimatedMinutes && (
-                <span>ETA {activeTask.estimatedMinutes}m</span>
-              )}
+              <span>ETA {activeTask.estimatedMinutes}m</span>
             </div>
           )}
-          {/* Progress bar (placeholder — 0% dopóki nie ma tracking) */}
           <div className={styles.progressRow}>
             <span className={styles.progressLabel}>PROGRESS</span>
             <div className={styles.progressBar}>
@@ -136,9 +202,8 @@ export function FocusTimer({ activeTask }: FocusTimerProps) {
         </div>
       )}
 
-      {/* Sessions count */}
       <div className={styles.sessionCount}>
-        <span className={styles.sessionNum}>{sessions}</span>
+        <span className={styles.sessionNum}>{sessionsToday}</span>
         <span className={styles.sessionLabel}>sessions today</span>
       </div>
     </div>

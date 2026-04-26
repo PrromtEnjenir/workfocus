@@ -1,10 +1,17 @@
+// src/main/index.ts
 import { app, BrowserWindow, globalShortcut, Tray, Menu, nativeImage, ipcMain } from 'electron'
 import { join } from 'path'
 import { initDatabase, closeDatabase } from '../../electron/db/database'
 import { registerAllIpcHandlers } from '../../electron/ipc/registry'
+import { startScheduler, stopScheduler } from '../../electron/services/scheduler.service'
 
 let mainWindow: BrowserWindow | null = null
 let tray: Tray | null = null
+
+// Getter zamiast bezpośredniej referencji — scheduler nie trzyma instancji okna
+function getMainWindow(): BrowserWindow | null {
+  return mainWindow
+}
 
 function createWindow(): void {
   mainWindow = new BrowserWindow({
@@ -90,9 +97,12 @@ app.whenReady().then(() => {
   createWindow()
   createTray()
   registerGlobalShortcuts()
+  // Scheduler po createWindow — getMainWindow() zwróci poprawne okno
+  startScheduler(db, getMainWindow)
 })
 
 app.on('will-quit', () => {
+  stopScheduler()
   globalShortcut.unregisterAll()
   closeDatabase()
 })

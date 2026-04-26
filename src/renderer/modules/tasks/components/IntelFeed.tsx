@@ -1,7 +1,13 @@
+// src/renderer/modules/tasks/components/IntelFeed.tsx
+import { useEffect, useState, useCallback } from 'react'
+import { api, listen } from '@/bridge/api'
+import { useSharedStore } from '@/store/shared.slice'
+import type { FiredReminderPayload, ReminderWithTask, TaskHistoryEntry } from '@/shared/types/global.types'
+import { formatDistanceToNow, parseISO } from 'date-fns'
+import { pl } from 'date-fns/locale'
 import styles from './IntelFeed.module.css'
 
-// Typy eventów w feedzie
-type FeedEventType = 'session_start' | 'mission_complete' | 'mission_add' | 'streak' | 'reminder'
+type FeedEventType = 'mission_complete' | 'reminder' | 'followup'
 
 interface FeedEvent {
   id: string
@@ -11,31 +17,100 @@ interface FeedEvent {
   time: string
 }
 
-// Kolory dot per typ
 const DOT_COLOR: Record<FeedEventType, string> = {
-  session_start: 'var(--accent)',
   mission_complete: 'var(--color-success)',
-  mission_add: 'var(--accent-2)',
-  streak: 'var(--xp-color)',
-  reminder: 'var(--priority-high)',
+  reminder: 'var(--accent)',
+  followup: 'var(--priority-high)',
 }
 
-// Placeholder events — w pełnej implementacji z DB/event bus
-const PLACEHOLDER_EVENTS: FeedEvent[] = [
-  {
-    id: '1',
-    type: 'session_start',
-    title: 'Focus session started',
-    sub: 'Ready to work',
-    time: 'NOW',
-  },
-]
-
-interface IntelFeedProps {
-  events?: FeedEvent[]
+function relativeTime(iso: string): string {
+  try {
+    return formatDistanceToNow(parseISO(iso), { addSuffix: true, locale: pl })
+  } catch {
+    return '—'
+  }
 }
 
-export function IntelFeed({ events = PLACEHOLDER_EVENTS }: IntelFeedProps) {
+function historyToEvent(entry: TaskHistoryEntry): FeedEvent {
+  return {
+    id: `h-${entry.id}`,
+    type: 'mission_complete',
+    title: entry.title,
+    sub: entry.postMortem ?? undefined,
+    time: relativeTime(entry.completedAt),
+  }
+}
+
+function reminderToEvent(r: ReminderWithTask): FeedEvent {
+  return {
+    id: `r-${r.id}`,
+    type: r.type === 'followup' ? 'followup' : 'reminder',
+    title: r.taskTitle,
+    sub: r.type === 'followup' ? 'Oczekuje odpowiedzi' : 'Przypomnienie',
+    time: relativeTime(r.remindAt),
+  }
+}
+
+function firedToEvent(payload: FiredReminderPayload): FeedEvent {
+  return {
+    id: `fired-${payload.id}`,
+    type: payload.type === 'followup' ? 'followup' : 'reminder',
+    title: payload.taskTitle,
+    sub: payload.type === 'followup' ? 'Follow-up!' : 'Przypomnienie!',
+    time: 'TERAZ',
+  }
+}
+
+export function IntelFeed() {
+  const activeArea = useSharedStore((s) => s.activeArea)
+  const [events, setEvents] = useState<FeedEvent[]>([])
+  const [loading, setLoading] = useState(true)
+
+  const loadData = useCallback(async () => {
+    try {
+      const [history, reminders] = await Promise.all([
+        api.history.getAll(activeArea, { area: activeArea }),
+        api.reminders.getUpcoming(7),
+      ])
+
+      // Ostatnie 5 zamkniętych tasków + nadchodzące remindery, posortowane po czasie
+      const historyEvents = history
+        .slice(0, 5)
+        .map(historyToEvent)
+
+      const reminderEvents = reminders
+        .filter((r) => r.taskArea === activeArea)
+        .map(reminderToEvent)
+
+      // Historia na górze (nowsza = wyżej), remindery pod spodem
+      setEvents([...historyEvents, ...reminderEvents])
+    } catch (err) {
+      console.error('[IntelFeed] Błąd ładowania danych:', err)
+    } finally {
+      setLoading(false)
+    }
+  }, [activeArea])
+
+  useEffect(() => {
+    setLoading(true)
+    loadData()
+  }, [loadData])
+
+  // Nasłuchuj na fired remindery ze schedulera — wstaw na górę feeda
+  useEffect(() => {
+    const cleanup = listen.onReminderFired((payload) => {
+      if (payload.taskArea !== activeArea) return
+
+      setEvents((prev) => {
+        const newEvent = firedToEvent(payload)
+        // Unikaj duplikatów jeśli przyszło kilka razy
+        const filtered = prev.filter((e) => e.id !== newEvent.id)
+        return [newEvent, ...filtered].slice(0, 20)
+      })
+    })
+    return cleanup
+  }, [activeArea])
+
   return (
     <div className={styles.container}>
       <div className={styles.header}>
@@ -44,7 +119,9 @@ export function IntelFeed({ events = PLACEHOLDER_EVENTS }: IntelFeedProps) {
       </div>
 
       <div className={styles.feed}>
-        {events.length === 0 ? (
+        {loading ? (
+          <div className={styles.empty}>LOADING…</div>
+        ) : events.length === 0 ? (
           <div className={styles.empty}>NO EVENTS</div>
         ) : (
           events.map((event) => (
@@ -65,7 +142,7 @@ export function IntelFeed({ events = PLACEHOLDER_EVENTS }: IntelFeedProps) {
         )}
       </div>
 
-      {/* Operator panel na dole */}
+      {/* Operator panel */}
       <div className={styles.operator}>
         <div className={styles.operatorHeader}>OPERATOR</div>
         <div className={styles.operatorRow}>

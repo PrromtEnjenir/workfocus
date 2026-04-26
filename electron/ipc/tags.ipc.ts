@@ -12,6 +12,7 @@ export function registerTagsIpc(db: Database.Database): void {
 
   ipcMain.handle('tags:create', (_, data: CreateTagDTO) => {
     return repo.create(data)
+    console.log('[tasks:create] type:', task.type)  // ← dodaj
   })
 
   ipcMain.handle(
