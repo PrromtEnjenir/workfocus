@@ -2,6 +2,7 @@ interface Window {
   electronAPI: {
     invoke: (channel: string, data?: unknown) => Promise<unknown>
     on: (channel: string, cb: (...args: unknown[]) => void) => () => void
+    send: (channel: string, data?: unknown) => void
     windowMinimize?: () => void
     windowMaximize?: () => void
     windowClose?: () => void

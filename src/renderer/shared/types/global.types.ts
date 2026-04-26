@@ -237,6 +237,31 @@ export interface StreakData {
   longest: number
 }
 
+export interface RitualLogDTO {
+  type: 'daily_plan' | 'daily_shutdown' | 'weekly_review'
+  date: string
+  energyLevel?: 'high' | 'medium' | 'low'
+  notes?: string
+  wins?: string[]  // tablica stringów — serializable do JSON w DB
+}
+
+export interface RitualLog {
+  id: string
+  type: 'daily_plan' | 'daily_shutdown' | 'weekly_review'
+  date: string
+  energyLevel?: string | null
+  notes?: string | null
+  wins?: string | null  // JSON.stringify(string[]) w DB, parsuj przy odczycie
+  completedAt: string
+}
+
+// HistoryFilters — jeśli nie masz, dodaj:
+export interface HistoryFilters {
+  completedAfter?: string
+  completedBefore?: string
+  tagId?: string
+}
+
 // ---- Window API (preload) ----
 
 declare global {

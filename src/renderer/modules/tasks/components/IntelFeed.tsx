@@ -1,5 +1,5 @@
 // src/renderer/modules/tasks/components/IntelFeed.tsx
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useImperativeHandle, forwardRef } from 'react'
 import { api, listen } from '@/bridge/api'
 import { useSharedStore } from '@/store/shared.slice'
 import type { FiredReminderPayload, ReminderWithTask, TaskHistoryEntry } from '@/shared/types/global.types'
@@ -15,6 +15,10 @@ interface FeedEvent {
   title: string
   sub?: string
   time: string
+}
+
+export interface IntelFeedHandle {
+  refresh: () => void
 }
 
 const DOT_COLOR: Record<FeedEventType, string> = {
@@ -61,7 +65,7 @@ function firedToEvent(payload: FiredReminderPayload): FeedEvent {
   }
 }
 
-export function IntelFeed() {
+export const IntelFeed = forwardRef<IntelFeedHandle>(function IntelFeed(_, ref) {
   const activeArea = useSharedStore((s) => s.activeArea)
   const [events, setEvents] = useState<FeedEvent[]>([])
   const [loading, setLoading] = useState(true)
@@ -73,16 +77,11 @@ export function IntelFeed() {
         api.reminders.getUpcoming(7),
       ])
 
-      // Ostatnie 5 zamkniętych tasków + nadchodzące remindery, posortowane po czasie
-      const historyEvents = history
-        .slice(0, 5)
-        .map(historyToEvent)
-
+      const historyEvents = history.slice(0, 5).map(historyToEvent)
       const reminderEvents = reminders
         .filter((r) => r.taskArea === activeArea)
         .map(reminderToEvent)
 
-      // Historia na górze (nowsza = wyżej), remindery pod spodem
       setEvents([...historyEvents, ...reminderEvents])
     } catch (err) {
       console.error('[IntelFeed] Błąd ładowania danych:', err)
@@ -91,19 +90,21 @@ export function IntelFeed() {
     }
   }, [activeArea])
 
+  // Eksponuj refresh na zewnątrz przez ref
+  useImperativeHandle(ref, () => ({
+    refresh: loadData,
+  }), [loadData])
+
   useEffect(() => {
     setLoading(true)
     loadData()
   }, [loadData])
 
-  // Nasłuchuj na fired remindery ze schedulera — wstaw na górę feeda
   useEffect(() => {
     const cleanup = listen.onReminderFired((payload) => {
       if (payload.taskArea !== activeArea) return
-
       setEvents((prev) => {
         const newEvent = firedToEvent(payload)
-        // Unikaj duplikatów jeśli przyszło kilka razy
         const filtered = prev.filter((e) => e.id !== newEvent.id)
         return [newEvent, ...filtered].slice(0, 20)
       })
@@ -142,7 +143,6 @@ export function IntelFeed() {
         )}
       </div>
 
-      {/* Operator panel */}
       <div className={styles.operator}>
         <div className={styles.operatorHeader}>OPERATOR</div>
         <div className={styles.operatorRow}>
@@ -178,4 +178,4 @@ export function IntelFeed() {
       </div>
     </div>
   )
-}
+})

@@ -32,4 +32,8 @@ export function registerPomodoroIpc(db: Database.Database): void {
       focusMinutes: repo.focusMinutesToday(),
     }
   })
+
+  ipcMain.handle('pomodoro:statsByTask', (_, { taskId }: { taskId: string }) => {
+    return repo.statsByTask(taskId)
+  })
 }

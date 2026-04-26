@@ -1,3 +1,4 @@
+// src/preload/index.ts
 import { contextBridge, ipcRenderer } from 'electron'
 
 contextBridge.exposeInMainWorld('electronAPI', {
@@ -9,12 +10,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
     return () => ipcRenderer.removeAllListeners(channel)
   },
 
-  // Kontrolki okna
+  send: (channel: string, data?: unknown) =>
+    ipcRenderer.send(channel, data),
+
   windowMinimize: () => ipcRenderer.send('window:minimize'),
   windowMaximize: () => ipcRenderer.send('window:maximize'),
   windowClose: () => ipcRenderer.send('window:close'),
   onWindowMaximized: (cb: (isMax: boolean) => void) => {
-    ipcRenderer.on('window:maximized', (_, val) => cb(val as boolean))
+    ipcRenderer.on('window:maximized', (_, isMax) => cb(isMax as boolean))
     return () => ipcRenderer.removeAllListeners('window:maximized')
   },
 })

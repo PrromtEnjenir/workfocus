@@ -1,4 +1,4 @@
-// src/bridge/api.ts
+// src/renderer/bridge/api.ts
 import type {
   Area,
   AppSettings,
@@ -30,6 +30,10 @@ import type {
 
 function ipc<T>(channel: string, data?: unknown): Promise<T> {
   return window.electronAPI.invoke(channel, data) as Promise<T>
+}
+
+function send(channel: string, data?: unknown): void {
+  window.electronAPI.send(channel, data)
 }
 
 export const api = {
@@ -93,17 +97,21 @@ export const api = {
       ipc<PomodoroSession[]>('pomodoro:history', { taskId }),
     statsToday: () =>
       ipc<{ sessions: { completed: number; total: number }; focusMinutes: number }>('pomodoro:statsToday'),
+    statsByTask: (taskId: string) =>
+      ipc<{ totalMinutes: number; sessionsCount: number }>('pomodoro:statsByTask', { taskId }),
   },
 
   stats: {
-    getWeeklyThroughput: (weeks: number) =>
-      ipc<WeeklyThroughput[]>('stats:weeklyThroughput', { weeks }),
-    getEstimationAccuracy: () =>
-      ipc<EstimationAccuracy[]>('stats:estimationAccuracy'),
-    getTimePerTag: (days: number) =>
-      ipc<TimePerTag[]>('stats:timePerTag', { days }),
-    getStreak: () =>
-      ipc<StreakData>('stats:streak'),
+    getWeeklyThroughput: (weeks: number, area?: Area) =>
+      ipc<WeeklyThroughput[]>('stats:weeklyThroughput', { weeks, area }),
+    getEstimationAccuracy: (area?: Area) =>
+      ipc<EstimationAccuracy[]>('stats:estimationAccuracy', { area }),
+    getTimePerTag: (days: number, area?: Area) =>
+      ipc<TimePerTag[]>('stats:timePerTag', { days, area }),
+    getStreak: (area?: Area) =>
+      ipc<StreakData>('stats:streak', { area }),
+    getEfficiency: (area?: Area) =>
+      ipc<number | null>('stats:efficiency', { area }),
   },
 
   history: {
@@ -148,12 +156,35 @@ export const api = {
   },
 }
 
-// Push eventy z main process (scheduler → renderer)
 export const listen = {
-  // Scheduler odpala gdy reminder jest due
   onReminderFired: (cb: (payload: FiredReminderPayload) => void): (() => void) =>
     window.electronAPI.on('reminder:fired', (p) => cb(p as FiredReminderPayload)),
 
   onQuickCapture: (cb: () => void): (() => void) =>
     window.electronAPI.on('shortcut:quickCapture', cb),
+
+  onTimerSync: (cb: (payload: import('@/store/pomodoro.slice').TimerBroadcastPayload) => void): (() => void) =>
+    window.electronAPI.on('timer:sync', (p) => cb(p as import('@/store/pomodoro.slice').TimerBroadcastPayload)),
+
+  // Główne okno nasłuchuje na odświeżenie tasków po capture
+  onTasksRefresh: (cb: () => void): (() => void) =>
+    window.electronAPI.on('tasks:refresh', cb),
+}
+
+export const broadcast = {
+  timerState: (payload: import('@/store/pomodoro.slice').TimerBroadcastPayload): void =>
+    send('timer:broadcast', payload),
+
+  openFocusWindow: (): void =>
+    send('focus-window:open'),
+
+  closeFocusWindow: (): void =>
+    send('focus-window:close'),
+
+  // Capture window wysyła to po stworzeniu taska
+  captureTaskCreated: (): void =>
+    send('capture-window:taskCreated'),
+
+  closeCaptureWindow: (): void =>
+    send('capture-window:close'),
 }

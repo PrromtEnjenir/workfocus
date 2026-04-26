@@ -34,7 +34,6 @@ export class PomodoroRepo extends BaseRepo {
     super(db)
   }
 
-  // Tworzy nową sesję i zwraca ją
   start(taskId: string | null, plannedMinutes: number = 25): PomodoroSession {
     const id = this.newId()
     const now = this.now()
@@ -49,7 +48,6 @@ export class PomodoroRepo extends BaseRepo {
     return this.getById(id)!
   }
 
-  // Kończy sesję — completed=true jeśli dobiegła końca, false jeśli przerwana
   stop(id: string, completed: boolean, interruptedReason?: string): void {
     this.db
       .prepare(
@@ -60,7 +58,6 @@ export class PomodoroRepo extends BaseRepo {
       .run(this.now(), completed ? 1 : 0, interruptedReason ?? null, id)
   }
 
-  // Dopisz notatkę do parking lot (nie przerywa sesji)
   addParkingLot(id: string, note: string): void {
     const session = this.getById(id)
     if (!session) return
@@ -79,7 +76,6 @@ export class PomodoroRepo extends BaseRepo {
     return row ? rowToModel(row) : null
   }
 
-  // Historia sesji — opcjonalnie filtrowana po tasku
   getHistory(taskId?: string): PomodoroSession[] {
     const rows = taskId
       ? (this.db
@@ -92,7 +88,6 @@ export class PomodoroRepo extends BaseRepo {
     return rows.map(rowToModel)
   }
 
-  // Ile sesji ukończono dziś — do StatCards
   countCompletedToday(): { completed: number; total: number } {
     const startOfDay = new Date()
     startOfDay.setHours(0, 0, 0, 0)
@@ -113,7 +108,6 @@ export class PomodoroRepo extends BaseRepo {
     }
   }
 
-  // Suma minut focus dziś — do StatCards
   focusMinutesToday(): number {
     const startOfDay = new Date()
     startOfDay.setHours(0, 0, 0, 0)
@@ -127,5 +121,26 @@ export class PomodoroRepo extends BaseRepo {
       .get(startOfDay.toISOString()) as { total: number | null }
 
     return result.total ?? 0
+  }
+
+  /**
+   * Suma ukończonych sesji i minut dla konkretnego taska — wszystkie czasy, nie tylko dziś.
+   * Używane przez Active Mission panel do pokazania ile czasu już poświęcono.
+   */
+  statsByTask(taskId: string): { totalMinutes: number; sessionsCount: number } {
+    const result = this.db
+      .prepare(
+        `SELECT
+           COUNT(*) as sessions_count,
+           SUM(planned_minutes) as total_minutes
+         FROM pomodoro_sessions
+         WHERE task_id = ? AND completed = 1`
+      )
+      .get(taskId) as { sessions_count: number; total_minutes: number | null }
+
+    return {
+      sessionsCount: result.sessions_count,
+      totalMinutes: result.total_minutes ?? 0,
+    }
   }
 }

@@ -1,0 +1,236 @@
+/* src/renderer/modules/triage/components/PairComparison.module.css */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  padding: 16px 0;
+  flex: 1;
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.step {
+  font-size: 10px;
+  color: var(--color-text-muted);
+  opacity: 0.6;
+  letter-spacing: 0.1em;
+}
+
+.prompt {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-text);
+  letter-spacing: 0.05em;
+}
+
+/* Progress */
+.progressBar {
+  width: 100%;
+  max-width: 600px;
+  height: 2px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  background: var(--accent, #7c3aed);
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+/* Pair row */
+.pairRow {
+  display: flex;
+  align-items: stretch;
+  gap: 16px;
+  width: 100%;
+  max-width: 760px;
+}
+
+.pairCard {
+  flex: 1;
+  background: var(--color-surface-2, rgba(255,255,255,0.04));
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 14px;
+  padding: 24px 20px;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.18s;
+}
+
+.pairCard:hover:not(:disabled) {
+  border-color: var(--accent, #7c3aed);
+  background: rgba(124, 58, 237, 0.08);
+  transform: translateY(-2px);
+}
+
+.pairCard:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.pairCard:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.cardContent {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.cardTitle {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.cardMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.badge {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  background: rgba(124, 58, 237, 0.15);
+  color: var(--accent, #7c3aed);
+  border-radius: 4px;
+  padding: 2px 7px;
+}
+
+.badgeUrgent {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+  border-radius: 4px;
+  padding: 2px 7px;
+}
+
+.pain {
+  font-size: 10px;
+  color: var(--color-text-muted);
+  opacity: 0.7;
+}
+
+.vs {
+  display: flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.15em;
+  color: var(--color-text-muted);
+  opacity: 0.4;
+}
+
+/* Skip */
+.skipBtn {
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  opacity: 0.5;
+  font-size: 11px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: opacity 0.15s;
+}
+
+.skipBtn:hover:not(:disabled) {
+  opacity: 1;
+}
+
+/* Done screen */
+.done {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  flex: 1;
+  padding: 48px 0;
+}
+
+.doneIcon {
+  font-size: 40px;
+  color: var(--accent, #7c3aed);
+}
+
+.doneTitle {
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 0.15em;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.doneSub {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.doneBtn {
+  margin-top: 8px;
+  padding: 10px 24px;
+  background: var(--accent, #7c3aed);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.doneBtn:hover {
+  opacity: 0.85;
+}
+
+.quadrantTag {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  opacity: 0.8;
+}
+
+.hint {
+  font-size: 10px;
+  color: var(--color-text-muted);
+  opacity: 0.45;
+  text-align: center;
+  max-width: 500px;
+}
+
+.cardMeta {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.pain {
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.score {
+  font-size: 10px;
+  color: var(--color-text-muted);
+  opacity: 0.55;
+}

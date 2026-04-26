@@ -5,6 +5,7 @@
   "main": "out/main/index.js",
   "scripts": {
     "dev": "electron-vite dev",
+    "dev:reset": "node scripts/reset-db.js",
     "build": "electron-vite build",
     "preview": "electron-vite preview",
     "test": "vitest",

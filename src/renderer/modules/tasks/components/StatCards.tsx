@@ -1,12 +1,15 @@
 // src/renderer/modules/tasks/components/StatCards.tsx
 import { useEffect, useState, useCallback } from 'react'
 import { api } from '@/bridge/api'
+import type { StreakData } from '@/shared/types/global.types'
 import styles from './StatCards.module.css'
 
 interface Stats {
   focusMinutes: number
   sessionsCompleted: number
   sessionsTotal: number
+  streak: StreakData | null
+  efficiency: number | null
 }
 
 function formatFocusTime(minutes: number): string {
@@ -15,20 +18,39 @@ function formatFocusTime(minutes: number): string {
   return `${h}h ${m}m`
 }
 
+function formatEfficiency(value: number | null): string {
+  if (value === null) return '—'
+  return `${value}%`
+}
+
+function formatStreak(streak: StreakData | null): string {
+  if (streak === null) return '—'
+  return `${streak.current}d`
+}
+
 export function StatCards() {
   const [stats, setStats] = useState<Stats>({
     focusMinutes: 0,
     sessionsCompleted: 0,
     sessionsTotal: 0,
+    streak: null,
+    efficiency: null,
   })
 
   const loadStats = useCallback(async () => {
     try {
-      const data = await api.pomodoro.statsToday()
+      const [pomodoro, streak, efficiency] = await Promise.all([
+        api.pomodoro.statsToday(),
+        api.stats.getStreak(),
+        api.stats.getEfficiency(),
+      ])
+
       setStats({
-        focusMinutes: data.focusMinutes,
-        sessionsCompleted: data.sessions.completed,
-        sessionsTotal: data.sessions.total,
+        focusMinutes: pomodoro.focusMinutes,
+        sessionsCompleted: pomodoro.sessions.completed,
+        sessionsTotal: pomodoro.sessions.total,
+        streak,
+        efficiency,
       })
     } catch (err) {
       console.error('[StatCards] Błąd ładowania statystyk:', err)
@@ -37,7 +59,6 @@ export function StatCards() {
 
   useEffect(() => {
     loadStats()
-    // Odświeżaj co minutę — po zakończeniu sesji pomodoro liczniki się aktualizują
     const interval = setInterval(loadStats, 60_000)
     return () => clearInterval(interval)
   }, [loadStats])
@@ -57,15 +78,19 @@ export function StatCards() {
     },
     {
       label: 'STREAK',
-      value: '—',
-      sub: 'current',
+      value: formatStreak(stats.streak),
+      sub: stats.streak ? `best ${stats.streak.best}d` : 'current',
       color: 'var(--xp-color)',
     },
     {
       label: 'EFFICIENCY',
-      value: '—',
-      sub: 'vs avg',
-      color: 'var(--accent-3)',
+      value: formatEfficiency(stats.efficiency),
+      sub: stats.efficiency !== null
+        ? stats.efficiency <= 100 ? 'under estimate' : 'over estimate'
+        : 'vs estimate',
+      color: stats.efficiency !== null && stats.efficiency > 120
+        ? 'var(--color-danger, #ef4444)'
+        : 'var(--accent-3)',
     },
   ]
 

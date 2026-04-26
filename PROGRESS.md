@@ -1,7 +1,7 @@
 ## Status projektu
-**Faza:** 2 — Core (domykanie)
-**Ostatnia sesja:** Sesja 3
-**Następna sesja:** Faza 3 — stats.ipc (STREAK + EFFICIENCY), pomodoro slice, triage module
+**Faza:** 3 — Focus Tools (w toku)
+**Ostatnia sesja:** Sesja 4+5 (długa)
+**Następna sesja:** Quick Capture UI, History page, Daily Planning ritual, Settings page
 
 ---
 
@@ -14,10 +14,10 @@
 - [x] 001_initial.sql — pełny schemat DB
 - [x] base.repo.ts (softDelete, logChange, activeWhere)
 - [x] settings.repo.ts
-- [x] IPC registry + preload bridge
+- [x] IPC registry + preload bridge (z send + window controls)
 - [x] Zustand setup (shared.slice, settings.slice)
 - [x] Layout + routing (lazy)
-- [x] Light/dark mode (zastąpiony przez stały dark theme)
+- [x] Dark theme
 - [x] i18n setup (PL default)
 - [x] Tray icon + globalny Ctrl+Shift+Space
 - [x] Testy: migrations + settings repo
@@ -26,28 +26,44 @@
 - [x] tags.repo.ts + tags.ipc.ts
 - [x] tasks.repo.ts + tasks.ipc.ts
 - [x] tasks.slice.ts (Zustand, undo queue)
-- [x] useTasks.ts + useTags.ts
-- [x] TaskItem, TaskList, TaskForm, TaskDetail, UndoBar — komponenty
-- [x] Soft delete z 30s undo (UndoBar z progress barem)
+- [x] useTasks.ts + useTags.ts (createTask robi fetchTasks zamiast upsert)
+- [x] TaskItem, TaskList, TaskForm, TaskDetail, UndoBar
+- [x] Soft delete z 30s undo
 - [x] Post-mortem przy zamykaniu zadania
-- [x] Badge priorytetu CRITICAL/HIGH/MED na task itemach
-- [x] Pain dots (10 kropek) na task itemach
-- [x] global.types.ts — wszystkie typy aplikacji
+- [x] global.types.ts
 - [x] reminders.repo.ts + reminders.ipc.ts
 - [x] history.repo.ts + history.ipc.ts
-- [x] pomodoro.repo.ts + pomodoro.ipc.ts
-- [x] scheduler.service.ts (cron co minutę + restart recovery)
-- [x] Follow-up tracker — auto reminder przy tworzeniu email/waiting_for
-- [x] IntelFeed — prawdziwe dane (historia + nadchodzące remindery + fired eventy)
-- [x] FocusTimer — podpięty pod DB, zapisuje sesje pomodoro
-- [x] StatCards — FOCUS TIME i SESSIONS z prawdziwych danych
+- [x] pomodoro.repo.ts + pomodoro.ipc.ts (z statsByTask)
+- [x] scheduler.service.ts (cron + restart recovery)
+- [x] Follow-up tracker
+- [x] IntelFeed (forwardRef + refresh po complete)
+- [x] StatCards — FOCUS TIME, SESSIONS, STREAK, EFFICIENCY
 
-### UI Redesign — Orbital Dark Theme
-- [x] Nowy design system — paleta orbital (deep purple/indigo/fiolet)
+### Faza 2 — Stats (ukończona)
+- [x] stats.repo.ts (streak, efficiency, weeklyThroughput, timePerTag, estimationAccuracy)
+- [x] stats.ipc.ts + rejestracja w registry
+
+### Faza 2 — Triage (ukończona)
+- [x] triage.types.ts, useTriageTasks.ts
+- [x] TriageCard.tsx — Eisenhower toggles + pain slider
+- [x] PairComparison.tsx — pary TYLKO wewnątrz ćwiartki, winner/loser ±1 pain
+- [x] TriagePage — matrix 2x2 + lista priorytetów
+
+### Faza 3 — Focus Tools (w toku)
+- [x] pomodoro.slice.ts — globalny stan timera (source of truth)
+- [x] FocusTimer.tsx — przepisany na pomodoro.slice + broadcast
+- [x] Focus Mode mini-okno (Ctrl+Shift+F) — always-on-top, sync stanu z głównym oknem
+- [x] Dźwięk końca sesji (timer-end.wav)
+- [x] focusTaskId w shared.slice — Active Mission niezależna od detaila
+- [x] TaskItem — kółko → ▶ Focus button (toggle focus)
+- [x] broadcast w main.ts — timer:broadcast → timer:sync między oknami
+- [x] scripts/reset-db.js — dev reset bazy
+
+### UI — Orbital Dark Theme (ukończony)
 - [x] Frameless window z custom titlebar
 - [x] Poziomy navbar (COMMAND / TRIAGE / ANALYTICS / SETTINGS)
-- [x] COMMAND page — kokpit z 3 kolumnami
-- [x] FocusTimer — SVG orbital timer z animowanym okręgiem
+- [x] COMMAND page — kokpit 3 kolumny
+- [x] FocusTimer SVG orbital
 - [x] StatCards, IntelFeed, Active Mission panel
 
 ### Wersje kluczowych zależności
@@ -59,43 +75,56 @@
 - vitest: ^3.1.0
 
 ### Struktura katalogów (ważne)
-- Electron entry: src/main/index.ts
-- Preload entry: src/preload/index.ts
+- Electron entry: src/main/index.ts (NIE electron/main.ts — ten jest nieużywany)
+- Preload: src/preload/index.ts
 - Renderer root: src/renderer/
-- Logika backendu: electron/ (db/, ipc/, services/)
+- Backend logika: electron/ (db/, ipc/, services/)
 - COMMAND page: src/renderer/modules/tasks/CommandPage.tsx
+- Triage: src/renderer/modules/triage/
+- Focus Mode: src/renderer/modules/focus/FocusMode.tsx
+- Bridge: src/renderer/bridge/api.ts (ma: api, listen, broadcast)
+- Store: src/renderer/store/ (shared.slice, tasks.slice, pomodoro.slice, settings.slice)
 
-## W toku
-- STREAK i EFFICIENCY w StatCards — czekają na stats.ipc
-- FocusTimer progress bar — placeholder 0%, czeka na tracking actual_minutes
+## W toku / Następna sesja
 
-## Znane problemy / decyzje do podjęcia
-- Po każdym npm install: npx electron-rebuild -f -w better-sqlite3
-- Zustand v5: selektory zwracające array/obiekt inline wymagają useShallow
-- window.electronAPI wymaga rozszerzenia typów w global.d.ts
+### Do zrobienia (priorytet):
+1. **Quick Capture UI** — mini-okno na Ctrl+Shift+Space (osobny BrowserWindow, formularz: tytuł + typ + area, Enter = create + zamknij)
+2. **History page** — moduł analytics/history, lista zamkniętych tasków z filtrami
+3. **Daily Planning ritual** — poranny przegląd + plan dnia
+4. **Daily Shutdown ritual** — wieczorny summary
+5. **Weekly Review** — piątkowy przegląd
+6. **Settings page** — zarządzanie tagami, konfiguracja pomodoro, motyw, język
+
+### Znane problemy / decyzje:
+- Po każdym npm install: `npx electron-rebuild -f -w better-sqlite3`
+- Zustand v5: selektory zwracające obiekt/array ZAWSZE przez useShallow
+- electron/main.ts istnieje ale jest NIEUŻYWANY — entry to src/main/index.ts
+- Efficiency liczy tylko taski z actual_minutes != NULL (wypełnione w post-mortem)
+- Focus Mode: wyciszenie dźwięku jest w mini-oknie (🔇/🔊 button)
+- FOLLOW-UP (było QUEUED) = filter type waiting_for w CommandPage
 
 ## Log sesji
 
 ### Sesja 0 — Planowanie (2026-04-22)
-- Zaprojektowana architektura, stack, scope, pliki kontekstowe
+- Zaprojektowana architektura, stack, scope
 
 ### Sesja 1 — Fundament (2026-04-23)
-- Wygenerowane wszystkie pliki Fazy 1
-- Aplikacja uruchomiona — sidebar, nawigacja, dark mode działają
+- Wygenerowane wszystkie pliki Fazy 1, aplikacja uruchomiona
 
 ### Sesja 2 — Core + Orbital Redesign (2026-04-24)
-- Zaimplementowany pełny moduł Tasks (repo, IPC, store, komponenty)
-- Orbital dark theme — nowy design system od zera
-- Frameless window z custom kontrolkami
-- COMMAND kokpit — timer, active mission, stat karty, intel feed
+- Pełny moduł Tasks, Orbital dark theme, COMMAND kokpit
 
 ### Sesja 3 — Reminders + Pomodoro + IntelFeed (2026-04-26)
-- global.types.ts — stworzony od zera (brakowało)
-- reminders.repo + reminders.ipc + scheduler.service
-- history.repo + history.ipc
-- pomodoro.repo + pomodoro.ipc
-- FocusTimer podpięty pod DB (zapisuje sesje, liczy sessions today)
-- IntelFeed z prawdziwymi danymi (historia + remindery + push eventy)
-- StatCards: FOCUS TIME i SESSIONS z DB
-- Follow-up tracker: auto reminder dla email/waiting_for przy create
-- Debugowanie: podwójne liczenie sesji (useRef zamiast useState), animacja kółka przy końcu sesji
+- reminders/history/pomodoro repo+ipc, FocusTimer podpięty pod DB
+- IntelFeed z prawdziwymi danymi, follow-up auto reminder
+
+### Sesja 4+5 — Stats + Triage + Focus Mode (2026-04-26)
+- stats.repo + stats.ipc (streak, efficiency, throughput)
+- StatCards: wszystkie 4 karty z DB
+- Triage: matrix Eisenhower + pary wewnątrz ćwiartki
+- pomodoro.slice jako global state
+- Focus Mode mini-okno (Ctrl+Shift+F), broadcast sync między oknami
+- focusTaskId w shared.slice, ▶ Focus button w TaskItem
+- IntelFeed: forwardRef refresh po complete
+- scripts/reset-db.js
+- Dźwięk końca sesji pomodoro

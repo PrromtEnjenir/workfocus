@@ -1,6 +1,6 @@
 import { useCallback, useEffect } from 'react'
 import { useShallow } from 'zustand/shallow'
-import { api } from '@/bridge/api'
+import { api, listen } from '@/bridge/api'
 import { useSharedStore } from '@/store/shared.slice'
 import { useTasksStore } from '@/store/tasks.slice'
 import type { CompletionMeta, CreateTaskDTO, TaskFilters, UpdateTaskDTO } from '@/shared/types/global.types'
@@ -39,9 +39,11 @@ export function useTasks(filters?: TaskFilters) {
   }, [fetchTasks])
 
   const createTask = useCallback(async (data: CreateTaskDTO): Promise<void> => {
-    const task = await api.tasks.create(data)
-    upsertItem(task)
-  }, [upsertItem])
+    await api.tasks.create(data)
+    // Fetch zamiast upsert — nowy task musi trafić na właściwe miejsce
+    // w posortowanej liście (repo sortuje po important+urgent+pain_score)
+    fetchTasks()
+  }, [fetchTasks])
 
   const updateTask = useCallback(async (id: string, data: UpdateTaskDTO): Promise<void> => {
     const task = await api.tasks.update(id, data)
@@ -49,10 +51,8 @@ export function useTasks(filters?: TaskFilters) {
   }, [upsertItem])
 
   const completeTask = useCallback(async (id: string, meta: CompletionMeta): Promise<void> => {
-    // Optymistyczne usunięcie z listy
     const task = useTasksStore.getState().items.find((t) => t.id === id)
     if (!task) return
-
     removeItem(id)
     await api.tasks.complete(id, meta)
   }, [removeItem])
@@ -61,7 +61,6 @@ export function useTasks(filters?: TaskFilters) {
     const task = useTasksStore.getState().items.find((t) => t.id === id)
     if (!task) return
 
-    // Optymistycznie wyrzuć z listy, daj 30s na undo
     removeItem(id)
 
     const timeoutId = setTimeout(async () => {
@@ -81,9 +80,13 @@ export function useTasks(filters?: TaskFilters) {
 
   const setSomeday = useCallback(async (id: string): Promise<void> => {
     removeItem(id)
-    await api.tasks.snooze(id, '') // tymczasowo — właściwe someday przez tasks:someday
-    // TODO: dodać api.tasks.someday gdy będzie w bridge
+    await api.tasks.someday(id)
   }, [removeItem])
+
+  useEffect(() => {
+    const unsub = listen.onTasksRefresh(() => void fetchTasks())
+    return unsub
+  }, [])
 
   return {
     tasks: items,

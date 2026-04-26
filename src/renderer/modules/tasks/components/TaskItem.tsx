@@ -1,4 +1,6 @@
 import { useTranslation } from 'react-i18next'
+import { useShallow } from 'zustand/shallow'
+import { useSharedStore } from '@/store/shared.slice'
 import type { TagModel, TaskModel } from '@/shared/types/global.types'
 import styles from './TaskItem.module.css'
 
@@ -11,7 +13,6 @@ interface TaskItemProps {
   selected: boolean
 }
 
-// SVG diament — ikona "ważne"
 function DiamondIcon({ className }: { className: string }) {
   return (
     <svg className={className} viewBox="0 0 8 8" fill="currentColor">
@@ -20,7 +21,6 @@ function DiamondIcon({ className }: { className: string }) {
   )
 }
 
-// Pain dots — 10 kropek
 function PainDots({ score }: { score: number }) {
   return (
     <div className={styles.painDots}>
@@ -40,24 +40,12 @@ function PainDots({ score }: { score: number }) {
   )
 }
 
-// Mapowanie important+urgent+painScore → badge CRITICAL/HIGH/MED/LOW
-function getPriorityBadge(task: TaskModel): {
-  label: string
-  className: string
-} | null {
-  if (task.important && task.urgent) {
-    return { label: 'CRITICAL', className: styles.badgeCritical }
-  }
-  if (task.important) {
-    return { label: 'HIGH', className: styles.badgeHigh }
-  }
-  if (task.urgent) {
-    return { label: 'HIGH', className: styles.badgeHigh }
-  }
-  if (task.painScore >= 7) {
-    return { label: 'MED', className: styles.badgeMed }
-  }
-  return null // LOW — nie pokazujemy badge żeby nie zaśmiecać
+function getPriorityBadge(task: TaskModel): { label: string; className: string } | null {
+  if (task.important && task.urgent) return { label: 'CRITICAL', className: styles.badgeCritical }
+  if (task.important) return { label: 'HIGH', className: styles.badgeHigh }
+  if (task.urgent) return { label: 'HIGH', className: styles.badgeHigh }
+  if (task.painScore >= 7) return { label: 'MED', className: styles.badgeMed }
+  return null
 }
 
 const TYPE_ICON: Record<string, string> = {
@@ -69,18 +57,32 @@ const TYPE_ICON: Record<string, string> = {
 export function TaskItem({
   task,
   tags,
-  onComplete,
   onDelete,
   onSelect,
   selected,
 }: TaskItemProps) {
   const { t } = useTranslation('tasks')
+
+  // Zustand v5: selector zwracający obiekt MUSI używać useShallow
+  const { focusTaskId, setFocusTaskId } = useSharedStore(
+    useShallow((s) => ({
+      focusTaskId: s.focusTaskId,
+      setFocusTaskId: s.setFocusTaskId,
+    }))
+  )
+
   const tag = tags.find((tg) => tg.id === task.tagId)
   const priorityBadge = getPriorityBadge(task)
+  const isFocused = focusTaskId === task.id
 
   const isOverdue =
     task.deadline != null &&
     task.deadline < new Date().toISOString().substring(0, 10)
+
+  const handleFocus = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    setFocusTaskId(isFocused ? null : task.id)
+  }
 
   return (
     <li
@@ -89,18 +91,15 @@ export function TaskItem({
       role="option"
       aria-selected={selected}
     >
-      {/* Checkbox */}
       <button
-        className={styles.completeBtn}
-        aria-label={t('complete')}
-        title={t('complete')}
-        onClick={(e) => {
-          e.stopPropagation()
-          onComplete(task.id)
-        }}
-      />
+        className={`${styles.focusBtn} ${isFocused ? styles.focusBtnActive : ''}`}
+        aria-label="Ustaw jako focus"
+        title={isFocused ? 'Zdejmij focus' : 'Ustaw jako Active Mission'}
+        onClick={handleFocus}
+      >
+        {isFocused ? '◉' : '▶'}
+      </button>
 
-      {/* Ikony priorytetu */}
       {(task.important || task.urgent) && (
         <div className={styles.priorityIcons}>
           {task.important && <DiamondIcon className={styles.iconImportant} />}
@@ -108,19 +107,14 @@ export function TaskItem({
         </div>
       )}
 
-      {/* Treść */}
       <div className={styles.content}>
         <div className={styles.titleRow}>
           {TYPE_ICON[task.type] && (
             <span className={styles.typeIcon}>{TYPE_ICON[task.type]}</span>
           )}
           <span className={styles.title}>{task.title}</span>
-
-          {/* Badge priorytetu */}
           {priorityBadge && (
-            <span
-              className={`${styles.priorityBadge} ${priorityBadge.className}`}
-            >
+            <span className={`${styles.priorityBadge} ${priorityBadge.className}`}>
               {priorityBadge.label}
             </span>
           )}
@@ -137,27 +131,21 @@ export function TaskItem({
               </span>
             )}
             {task.deadline && (
-              <span
-                className={isOverdue ? styles.deadline : styles.deadlineOk}
-              >
+              <span className={isOverdue ? styles.deadline : styles.deadlineOk}>
                 {task.deadline.substring(0, 10)}
               </span>
             )}
             {task.estimatedMinutes && (
-              <span className={styles.estimate}>
-                ETA {task.estimatedMinutes}m
-              </span>
+              <span className={styles.estimate}>ETA {task.estimatedMinutes}m</span>
             )}
           </div>
         )}
       </div>
 
-      {/* Pain dots */}
       <div className={styles.painScore}>
         <PainDots score={task.painScore} />
       </div>
 
-      {/* Delete */}
       <button
         className={styles.deleteBtn}
         aria-label={t('delete')}

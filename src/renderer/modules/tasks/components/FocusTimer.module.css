@@ -1,3 +1,5 @@
+/* src/renderer/modules/tasks/components/FocusTimer.module.css */
+
 .container {
   display: flex;
   flex-direction: column;
@@ -80,7 +82,7 @@
   padding: 14px 16px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
 .missionHeader {
@@ -114,48 +116,38 @@
   line-height: 1.4;
 }
 
+/* Focus stats per task */
+.missionStats {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 2px 0;
+}
+
+.missionStatValue {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  filter: drop-shadow(0 0 6px var(--accent-dim));
+}
+
+.missionStatLabel {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.missionStatHint {
+  font-size: 11px;
+  color: var(--text-muted);
+  opacity: 0.5;
+  font-style: italic;
+}
+
 .missionMeta {
   font-size: 11px;
   color: var(--text-muted);
-}
-
-.progressRow {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.progressLabel {
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  color: var(--text-muted);
-  min-width: 62px;
-}
-
-.progressBar {
-  flex: 1;
-  height: 3px;
-  background: var(--layer-4);
-  border-radius: 2px;
-  overflow: hidden;
-}
-
-.progressFill {
-  height: 100%;
-  background: linear-gradient(90deg, var(--accent), var(--accent-2));
-  border-radius: 2px;
-  transition: width 0.3s ease;
-  box-shadow: 0 0 6px var(--accent-dim);
-}
-
-.progressPct {
-  font-size: 11px;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  color: var(--text-muted);
-  min-width: 30px;
-  text-align: right;
 }
 
 /* Sessions */

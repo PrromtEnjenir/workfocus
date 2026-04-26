@@ -14,7 +14,7 @@ function createWindow(): void {
     minHeight: 600,
     title: 'WorkFocus',
     webPreferences: {
-      preload: join(__dirname, '../preload/preload.js'),
+      preload: join(__dirname, '../preload/index.js'),
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: false,

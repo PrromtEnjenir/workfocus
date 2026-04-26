@@ -6,6 +6,7 @@ import { registerTasksIpc } from './tasks.ipc'
 import { registerRemindersIpc } from './reminders.ipc'
 import { registerHistoryIpc } from './history.ipc'
 import { registerPomodoroIpc } from './pomodoro.ipc'
+import { registerStatsIpc } from './stats.ipc'
 
 export function registerAllIpcHandlers(db: Database.Database): void {
   registerSettingsIpc(db)
@@ -14,8 +15,8 @@ export function registerAllIpcHandlers(db: Database.Database): void {
   registerRemindersIpc(db)
   registerHistoryIpc(db)
   registerPomodoroIpc(db)
+  registerStatsIpc(db)
   // registerRitualsIpc(db)
-  // registerStatsIpc(db)
   // registerExportIpc(db)
   // registerDecisionsIpc(db)
 }

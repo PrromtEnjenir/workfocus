@@ -1,50 +1,110 @@
 // src/renderer/modules/tasks/components/FocusTimer.tsx
-import { useEffect, useRef, useState, useCallback } from 'react'
-import { api } from '@/bridge/api'
+import { useEffect, useRef, useCallback } from 'react'
+import { useShallow } from 'zustand/shallow'
+import { api, broadcast, listen } from '@/bridge/api'
+import { usePomodoroStore } from '@/store/pomodoro.slice'
+import { useSharedStore } from '@/store/shared.slice'
 import type { PomodoroSession, TaskModel } from '@/shared/types/global.types'
+import timerEndSound from '@/assets/timer-end.wav'
 import styles from './FocusTimer.module.css'
 
 interface FocusTimerProps {
   activeTask: TaskModel | null
 }
 
-type TimerState = 'idle' | 'running' | 'paused' | 'completing'
-
-const DEFAULT_MINUTES = 0.1
+function formatMinutes(minutes: number): string {
+  if (minutes < 60) return `${minutes}m`
+  const h = Math.floor(minutes / 60)
+  const m = minutes % 60
+  return m > 0 ? `${h}h ${m}m` : `${h}h`
+}
 
 export function FocusTimer({ activeTask }: FocusTimerProps) {
-  const [state, setState] = useState<TimerState>('idle')
-  const [totalSeconds, setTotalSeconds] = useState(DEFAULT_MINUTES * 60)
-  const [remainingSeconds, setRemainingSeconds] = useState(DEFAULT_MINUTES * 60)
-  const [sessionsToday, setSessionsToday] = useState(0)
+  const focusTaskId = useSharedStore((s) => s.focusTaskId)
 
-  const currentSessionRef = useRef<PomodoroSession | null>(null)
+  const {
+    timerState,
+    totalSeconds,
+    remainingSeconds,
+    currentSession,
+    sessionsToday,
+    setTimerState,
+    setTotalSeconds,
+    setRemainingSeconds,
+    setCurrentSession,
+    setSessionsToday,
+    syncFromBroadcast,
+  } = usePomodoroStore(
+    useShallow((s) => ({
+      timerState: s.timerState,
+      totalSeconds: s.totalSeconds,
+      remainingSeconds: s.remainingSeconds,
+      currentSession: s.currentSession,
+      sessionsToday: s.sessionsToday,
+      setTimerState: s.setTimerState,
+      setTotalSeconds: s.setTotalSeconds,
+      setRemainingSeconds: s.setRemainingSeconds,
+      setCurrentSession: s.setCurrentSession,
+      setSessionsToday: s.setSessionsToday,
+      syncFromBroadcast: s.syncFromBroadcast,
+    }))
+  )
+
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const audioRef = useRef<HTMLAudioElement | null>(null)
 
-  const loadStats = useCallback(async () => {
-    try {
-      const stats = await api.pomodoro.statsToday()
-      setSessionsToday(stats.sessions.completed)
-    } catch (err) {
-      console.error('[FocusTimer] Błąd ładowania statystyk:', err)
-    }
+  useEffect(() => {
+    audioRef.current = new Audio(timerEndSound)
+    audioRef.current.volume = 0.7
   }, [])
 
-  useEffect(() => {
-    loadStats()
-  }, [loadStats])
+  // Broadcast stanu przy każdej zmianie — mini-okno odbiera
+  const broadcastState = useCallback((
+    state: typeof timerState,
+    remaining: number,
+    total: number,
+    sessionId: string | null
+  ) => {
+    broadcast.timerState({
+      timerState: state,
+      totalSeconds: total,
+      remainingSeconds: remaining,
+      sessionId,
+      focusTaskId: focusTaskId ?? null,
+    })
+  }, [focusTaskId])
 
+  // Nasłuchuj na sync z mini-okna (pauza/reset z mini-okna)
   useEffect(() => {
-    if (state === 'running') {
+    const cleanup = listen.onTimerSync((payload) => {
+      syncFromBroadcast(payload)
+      // Jeśli mini-okno wysłało pause/resume — obsłuż
+      if (payload.timerState === 'paused' && timerState === 'running') {
+        setTimerState('paused')
+      } else if (payload.timerState === 'running' && timerState === 'paused') {
+        setTimerState('running')
+      }
+    })
+    return cleanup
+  }, [timerState, syncFromBroadcast, setTimerState])
+
+  // Tick timera
+  useEffect(() => {
+    if (timerState === 'running') {
       intervalRef.current = setInterval(() => {
-        setRemainingSeconds((prev) => {
-          if (prev <= 1) {
-            // Zostań na 0 — stan 'completing' zatrzyma interval i pokaże pełne kółko
-            setState('completing')
-            return 0
-          }
-          return prev - 1
-        })
+        setRemainingSeconds(
+          (() => {
+            const current = usePomodoroStore.getState().remainingSeconds
+            if (current <= 1) {
+              setTimerState('completing')
+              broadcastState('completing', 0, totalSeconds, currentSession?.id ?? null)
+              return 0
+            }
+            const next = current - 1
+            broadcastState('running', next, totalSeconds, currentSession?.id ?? null)
+            return next
+          })()
+        )
       }, 1000)
     } else {
       if (intervalRef.current) clearInterval(intervalRef.current)
@@ -53,63 +113,71 @@ export function FocusTimer({ activeTask }: FocusTimerProps) {
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current)
     }
-  }, [state])
+  }, [timerState, totalSeconds, currentSession?.id, broadcastState, setRemainingSeconds, setTimerState])
 
-  // Obsługa completing — osobny efekt, odpala się gdy stan zmieni się na 'completing'
+  // Obsługa completing
   useEffect(() => {
-    if (state !== 'completing') return
+    if (timerState !== 'completing') return
 
-    const session = currentSessionRef.current
+    const session = currentSession
 
     const finish = async () => {
+      audioRef.current?.play().catch(() => {
+        console.warn('[FocusTimer] Brak pliku audio')
+      })
+
       if (session) {
         try {
           await api.pomodoro.stop(session.id, true)
-          currentSessionRef.current = null
-          setSessionsToday((s) => s + 1)
+          setCurrentSession(null)
+          setSessionsToday(sessionsToday + 1)
         } catch (err) {
           console.error('[FocusTimer] Błąd zapisu sesji:', err)
         }
       }
-      // Reset po krótkim delay — użytkownik widzi 00:00 przez chwilę
+
       setTimeout(() => {
-        setState('idle')
+        setTimerState('idle')
         setRemainingSeconds(totalSeconds)
+        broadcastState('idle', totalSeconds, totalSeconds, null)
       }, 800)
     }
 
     finish()
-  }, [state, totalSeconds])
+  }, [timerState])  // eslint-disable-line react-hooks/exhaustive-deps
 
   const toggle = async () => {
-    if (state === 'idle') {
+    if (timerState === 'idle') {
       try {
-        const plannedMinutes = Math.round(totalSeconds / 60)
+        const plannedMinutes = Math.max(1, Math.round(totalSeconds / 60))
         const session = await api.pomodoro.start(activeTask?.id ?? null, plannedMinutes)
-        currentSessionRef.current = session
-        setState('running')
+        setCurrentSession(session)
+        setTimerState('running')
+        broadcastState('running', remainingSeconds, totalSeconds, session.id)
       } catch (err) {
         console.error('[FocusTimer] Błąd startu sesji:', err)
       }
-    } else if (state === 'running') {
-      setState('paused')
-    } else if (state === 'paused') {
-      setState('running')
+    } else if (timerState === 'running') {
+      setTimerState('paused')
+      broadcastState('paused', remainingSeconds, totalSeconds, currentSession?.id ?? null)
+    } else if (timerState === 'paused') {
+      setTimerState('running')
+      broadcastState('running', remainingSeconds, totalSeconds, currentSession?.id ?? null)
     }
   }
 
   const reset = async () => {
-    const session = currentSessionRef.current
-    if (session) {
+    if (currentSession) {
       try {
-        await api.pomodoro.stop(session.id, false, 'reset')
-        currentSessionRef.current = null
+        await api.pomodoro.stop(currentSession.id, false, 'reset')
+        setCurrentSession(null)
       } catch (err) {
         console.error('[FocusTimer] Błąd resetu sesji:', err)
       }
     }
-    setState('idle')
+    setTimerState('idle')
     setRemainingSeconds(totalSeconds)
+    broadcastState('idle', totalSeconds, totalSeconds, null)
   }
 
   const minutes = Math.floor(remainingSeconds / 60)
@@ -118,36 +186,25 @@ export function FocusTimer({ activeTask }: FocusTimerProps) {
 
   const radius = 54
   const circumference = 2 * Math.PI * radius
-  // Przy completing: kółko zostaje pełne (progress = 0 → dashOffset = circumference = puste)
-  // Chcemy pełne kółko przy 0s więc progress liczymy od totalSeconds
   const progress = totalSeconds > 0 ? remainingSeconds / totalSeconds : 0
-  const dashOffset = circumference * progress  // 0 = pełne kółko, circumference = puste
-
-  const isActive = state === 'running' || state === 'completing'
+  const dashOffset = circumference * progress
+  const isActive = timerState === 'running' || timerState === 'completing'
 
   return (
     <div className={styles.container}>
       <div
         className={styles.timerWrap}
-        onClick={state === 'completing' ? undefined : toggle}
-        title={state === 'running' ? 'Pauza' : state === 'completing' ? '' : 'Start'}
-        style={state === 'completing' ? { cursor: 'default' } : undefined}
+        onClick={timerState === 'completing' ? undefined : toggle}
+        title={timerState === 'running' ? 'Pauza' : timerState === 'completing' ? '' : 'Start'}
+        style={timerState === 'completing' ? { cursor: 'default' } : undefined}
       >
         <svg className={styles.timerSvg} viewBox="0 0 128 128">
-          <circle
-            cx="64" cy="64" r={radius}
-            fill="none"
-            stroke="rgba(192, 132, 252, 0.08)"
-            strokeWidth="6"
-          />
-          <circle
-            cx="64" cy="64" r={radius}
-            fill="none"
+          <circle cx="64" cy="64" r={radius} fill="none"
+            stroke="rgba(192, 132, 252, 0.08)" strokeWidth="6" />
+          <circle cx="64" cy="64" r={radius} fill="none"
             stroke={isActive ? 'url(#timerGrad)' : 'rgba(192, 132, 252, 0.3)'}
-            strokeWidth="6"
-            strokeLinecap="round"
-            strokeDasharray={circumference}
-            strokeDashoffset={dashOffset}
+            strokeWidth="6" strokeLinecap="round"
+            strokeDasharray={circumference} strokeDashoffset={dashOffset}
             transform="rotate(-90 64 64)"
             style={{ transition: 'stroke-dashoffset 1s linear' }}
           />
@@ -158,22 +215,19 @@ export function FocusTimer({ activeTask }: FocusTimerProps) {
             </linearGradient>
           </defs>
         </svg>
-
         <div className={styles.timerInner}>
           <span className={styles.timerTime}>{timeStr}</span>
           <span className={styles.timerLabel}>
-            {state === 'running' ? 'FOCUS SESSION'
-              : state === 'paused' ? 'PAUSED'
-              : state === 'completing' ? 'COMPLETE'
+            {timerState === 'running' ? 'FOCUS SESSION'
+              : timerState === 'paused' ? 'PAUSED'
+              : timerState === 'completing' ? 'COMPLETE'
               : 'CLICK TO START'}
           </span>
         </div>
       </div>
 
-      {(state === 'running' || state === 'paused') && (
-        <button className={styles.resetBtn} onClick={reset}>
-          RESET
-        </button>
+      {(timerState === 'running' || timerState === 'paused') && (
+        <button className={styles.resetBtn} onClick={reset}>RESET</button>
       )}
 
       {activeTask && (
@@ -181,9 +235,8 @@ export function FocusTimer({ activeTask }: FocusTimerProps) {
           <div className={styles.missionHeader}>
             <span className={styles.missionHeaderLabel}>ACTIVE MISSION</span>
             <span className={styles.missionCritical}>
-              {activeTask.important && activeTask.urgent ? 'CRITICAL' :
-               activeTask.important ? 'HIGH' :
-               activeTask.urgent ? 'HIGH' : 'MED'}
+              {activeTask.important && activeTask.urgent ? 'CRITICAL'
+                : activeTask.important || activeTask.urgent ? 'HIGH' : 'MED'}
             </span>
           </div>
           <div className={styles.missionTitle}>{activeTask.title}</div>
@@ -192,13 +245,6 @@ export function FocusTimer({ activeTask }: FocusTimerProps) {
               <span>ETA {activeTask.estimatedMinutes}m</span>
             </div>
           )}
-          <div className={styles.progressRow}>
-            <span className={styles.progressLabel}>PROGRESS</span>
-            <div className={styles.progressBar}>
-              <div className={styles.progressFill} style={{ width: '0%' }} />
-            </div>
-            <span className={styles.progressPct}>0%</span>
-          </div>
         </div>
       )}
 
